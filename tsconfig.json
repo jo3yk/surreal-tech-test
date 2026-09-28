@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "target": "ES2025",
+    "lib": ["DOM", "ES2025"],
+    "module": "esnext",
+    "sourceMap": true,
+    "allowJs": true,
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strictPropertyInitialization": false,
+    "resolveJsonModule": true,
+    "types": ["jest", "node"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
