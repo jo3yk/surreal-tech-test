@@ -5,6 +5,8 @@ import { BookingModel } from "./booking/model";
 import { BookingQuery } from "./booking/query";
 import { EntertainerCommand } from "./entertainer/command";
 import { EntertainerModel } from "./entertainer/model";
+import { EarningsModel } from "./earnings/model";
+import { EarningsQuery } from "./earnings/query";
 import { EntertainerQuery } from "./entertainer/query";
 import { MemoryEventBase } from "./eventbase";
 import { RecordModels, SubscribeModels } from "./events";
@@ -28,6 +30,7 @@ const venueModel = VenueModel(stack);
 
 const entertainerModel = EntertainerModel(stack);
 const paymentModel = PaymentModel(stack);
+const earningsModel = EarningsModel(stack);
 stack
   .setApiVersion("/v1")
   .mountProcessor(
@@ -39,7 +42,8 @@ stack
   .mountProcessor("Venue Command", "/venues", VenueCommand(stack))
   .mountProcessor("Venue Query", "/venues", VenueQuery(bookingModel, venueModel))
   .mountProcessor("Entertainer Command", "/entertainers", EntertainerCommand(stack))
-  .mountProcessor("Entertainer Query", "/entertainers", EntertainerQuery(entertainerModel, bookingModel, paymentModel))
+  .mountProcessor("Entertainer Query", "/entertainers", EntertainerQuery(entertainerModel))
+  .mountProcessor("Earnings Query", "/entertainers", EarningsQuery(earningsModel))
   .registerPostInitFn(() => {
     console.log("Booking ledger is up. Try the Bruno collection in ./bruno");
   })

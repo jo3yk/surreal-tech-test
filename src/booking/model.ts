@@ -1,7 +1,6 @@
 /** In-memory read/command model. Rebuilt from the event log on startup. */
 import { StackType } from "shimmiestack";
 import { RecordModels, SubscribeModels } from "../events";
-import { Payment } from "../payment/model";
 
 export type BookingStatus = "booked" | "cancelled";
 
@@ -14,19 +13,6 @@ export interface Booking {
   startsAt: string;
   status: BookingStatus;
   cancelledReason?: string;
-}
-
-export interface BookingEarnings {
-  bookingId: string;
-  venueId: string;
-  startsAt: string;
-  status: BookingStatus;
-  feeCents: number;
-  paidCents: number;
-  /** Fee still owed. 0 once cancelled or paid in full (an overpayment
-   * stays visible in paidCents rather than being clamped). */
-  outstandingCents: number;
-  payments: Payment[];
 }
 
 export function BookingModel(stack: StackType<RecordModels, SubscribeModels>) {

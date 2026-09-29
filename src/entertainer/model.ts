@@ -1,20 +1,11 @@
 /** In-memory read/command model. Rebuilt from the event log on startup. */
 import { StackType } from "shimmiestack";
 import { RecordModels, SubscribeModels } from "../events";
-import { BookingEarnings } from "../booking/model";
 
 export interface Entertainer {
   entertainerId: string;
   name: string;
   genre: string;
-}
-
-export interface EntertainerEarnings {
-  entertainerId: string;
-  entertainerName?: string;
-  totalPaidCents: number;
-  totalOutstandingCents: number;
-  bookings: BookingEarnings[];
 }
 
 export function EntertainerModel(
