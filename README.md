@@ -54,3 +54,7 @@ src/
 tests/
   booking.test.ts   tests via ShimmieTestStack
 ```
+
+## API collection
+
+`bruno/` is a [Bruno](https://www.usebruno.com/) collection covering every endpoint. Open the folder in Bruno, select the `local` environment (`http://localhost:8080/v1`) and run the collection top to bottom: ids returned by the create requests are saved and reused by later ones. Against a fresh server it can also be run headless with `npx @usebruno/cli run bruno --env local`.

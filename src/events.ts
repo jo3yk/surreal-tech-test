@@ -26,12 +26,28 @@ export interface BookingCancelledEvent {
   reason: string;
 }
 
+export interface VenueCreatedEvent {
+  venueId: string;
+  name: string;
+  capacity: number;
+}
+
+export interface EntertainerCreatedEvent {
+  entertainerId: string;
+  name: string;
+  genre: string;
+}
+
 export type RecordModels = {
   BOOKING_CONFIRMED_EVENT: BookingConfirmedEvent;
   BOOKING_CANCELLED_EVENT: BookingCancelledEvent;
+  VENUE_CREATED_EVENT: VenueCreatedEvent;
+  ENTERTAINER_CREATED_EVENT: EntertainerCreatedEvent;
 };
 
 export type SubscribeModels = {
   BOOKING_CONFIRMED_EVENT: BookingConfirmedEvent;
   BOOKING_CANCELLED_EVENT: BookingCancelledEvent;
+  VENUE_CREATED_EVENT: VenueCreatedEvent;
+  ENTERTAINER_CREATED_EVENT: EntertainerCreatedEvent;
 };

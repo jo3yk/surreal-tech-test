@@ -7,46 +7,65 @@ import {
   SubscribeModels,
 } from "../events";
 import { BookingModelType } from "./model";
+import {
+  getErrors,
+  metaFrom,
+  requireNonEmptyString,
+  requireNonNegativeInt,
+  requireIsoDate
+} from "../helpers";
+import { VenueModelType } from "../venue/model";
+import { EntertainerModelType } from "../entertainer/model";
 
-/** Event metadata: who, where, when. */
-function metaFrom(req: Request) {
-  return {
-    userAgent: req.get("user-agent") ?? "unknown",
-    user: req.get("x-user-id") ?? "anonymous",
-    date: Date.now(),
-  };
+interface CreateBookingRequest {
+  venueId: string;
+  entertainerId: string;
+  feeCents: number;
+  startsAt: string;
 }
 
 export function BookingCommand(
   stack: StackType<RecordModels, SubscribeModels>,
   bookingModel: BookingModelType,
+  venueModel: VenueModelType,
+  entertainerModel: EntertainerModelType,
 ): Router {
   const router = Router();
 
   router.post(
     "/",
     async (
-      req: Request<{}, {}, BookingConfirmedEvent>,
-      res: Response<{ bookingId: string } | { error: string }>,
+      req: Request<{}, {}, CreateBookingRequest>,
+      res: Response<{ bookingId: string } | { errors: Record<string, string> }>,
     ) => {
-      const { venueId, entertainerId, entertainerName, feeCents, startsAt } =
-        req.body;
+      const { venueId, entertainerId, feeCents, startsAt } = req.body;
 
-      if (!venueId || !entertainerId || !entertainerName || !startsAt) {
-        return res.status(400).json({
-          error:
-            "venueId, entertainerId, entertainerName and startsAt are required",
+      const validation = {
+        venueId: requireNonEmptyString(venueId, "venueId"),
+        entertainerId: requireNonEmptyString(entertainerId, "entertainerId"),
+        feeCents: requireNonNegativeInt(feeCents, "feeCents"),
+        startsAt: requireIsoDate(startsAt, "startsAt"),
+      };
+
+      const errors = getErrors(validation);
+
+      if (Object.keys(errors).length > 0) {
+        return res.status(400).json({ errors });
+      }
+
+      const venue = venueModel.getVenue(venueId);
+
+      if (!venue) {
+        return res.status(404).json({
+          errors: { venueId: `Unknown venue ${venueId}` },
         });
       }
-      if (!Number.isInteger(feeCents) || feeCents < 0) {
-        return res
-          .status(400)
-          .json({ error: "feeCents must be a non-negative integer" });
-      }
-      if (Number.isNaN(Date.parse(startsAt))) {
-        return res
-          .status(400)
-          .json({ error: "startsAt must be an ISO-8601 datetime" });
+      const entertainer = entertainerModel.getEntertainer(entertainerId);
+
+      if (!entertainer) {
+        return res.status(404).json({
+          errors: { entertainerId: `Unknown entertainer ${entertainerId}` },
+        })
       }
 
       const bookingId = randomUUID();
@@ -59,7 +78,7 @@ export function BookingCommand(
           bookingId,
           venueId,
           entertainerId,
-          entertainerName,
+          entertainerName: entertainer.name,
           feeCents,
           startsAt,
         },
