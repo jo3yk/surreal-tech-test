@@ -72,6 +72,7 @@ describe("validating a new entertainer", () => {
       expectedResponseCode: 400,
     });
     expect(res.body.errors[field]).toBeTruthy();
+    expect(res.body.error).toBeTruthy();
   });
 
   it("should report every invalid field at once", async () => {
@@ -82,6 +83,7 @@ describe("validating a new entertainer", () => {
       expectedResponseCode: 400,
     });
     expect(Object.keys(res.body.errors).sort()).toEqual(["genre", "name"]);
+    expect(res.body.error).toBeTruthy();
   });
 });
 

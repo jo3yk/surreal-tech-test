@@ -14,6 +14,9 @@ import {
   requireNonNegativeInt,
   requireIsoDate,
   requirePositiveInt,
+  ErrorResponse,
+  fieldError,
+  validationError,
 } from "../helpers";
 import { VenueModelType } from "../venue/model";
 import { EntertainerModelType } from "../entertainer/model";
@@ -45,7 +48,7 @@ export function BookingCommand(
     "/",
     async (
       req: Request<{}, {}, CreateBookingRequest>,
-      res: Response<{ bookingId: string } | { errors: Record<string, string> }>,
+      res: Response<{ bookingId: string } | ErrorResponse>,
     ) => {
       const { venueId, entertainerId, feeCents, startsAt } = req.body;
 
@@ -59,22 +62,22 @@ export function BookingCommand(
       const errors = getErrors(validation);
 
       if (Object.keys(errors).length > 0) {
-        return res.status(400).json({ errors });
+        return res.status(400).json(validationError(errors));
       }
 
       const venue = venueModel.getVenue(venueId);
 
       if (!venue) {
-        return res.status(404).json({
-          errors: { venueId: `Unknown venue ${venueId}` },
-        });
+        return res
+          .status(404)
+          .json(fieldError("venueId", `Unknown venue ${venueId}`));
       }
       const entertainer = entertainerModel.getEntertainer(entertainerId);
 
       if (!entertainer) {
-        return res.status(404).json({
-          errors: { entertainerId: `Unknown entertainer ${entertainerId}` },
-        });
+        return res.status(404).json(
+          fieldError("entertainerId", `Unknown entertainer ${entertainerId}`),
+        );
       }
 
       const bookingId = randomUUID();
@@ -102,7 +105,7 @@ export function BookingCommand(
     "/:bookingId/payments",
     async (
       req: Request<{ bookingId: string }, {}, RecordPaymentRequest>,
-      res: Response<{ paymentId: string } | { errors: Record<string, string> }>,
+      res: Response<{ paymentId: string } | ErrorResponse>,
     ) => {
       const { bookingId } = req.params;
       const { reference, amountCents, paidAt } = req.body;
@@ -117,16 +120,14 @@ export function BookingCommand(
       const errors = getErrors(validation);
 
       if (Object.keys(errors).length > 0) {
-        return res.status(400).json({ errors });
+        return res.status(400).json(validationError(errors));
       }
 
       const booking = bookingModel.getBooking(bookingId);
       if (!booking) {
-        return res.status(404).json({
-          errors: {
-            bookingId: `Booking with id ${bookingId} not found`,
-          },
-        });
+        return res.status(404).json(
+          fieldError("bookingId", `Booking with id ${bookingId} not found`),
+        );
       }
 
       // Deliberately no status check: payments against cancelled bookings are
@@ -146,11 +147,12 @@ export function BookingCommand(
         ) {
           return res.status(200).json({ paymentId: existing.paymentId });
         } else {
-          return res.status(409).json({
-            errors: {
-              reference: `Reference ${reference} already used for a different payment`,
-            },
-          });
+          return res.status(409).json(
+            fieldError(
+              "reference",
+              `Reference ${reference} already used for a different payment`,
+            ),
+          );
         }
       }
 
@@ -178,13 +180,13 @@ export function BookingCommand(
     "/:bookingId/cancel",
     async (
       req: Request<{ bookingId: string }, {}, { reason: string }>,
-      res: Response<undefined | { error: string }>,
+      res: Response<undefined | ErrorResponse>,
     ) => {
       const { bookingId } = req.params;
       const reason = req.body?.reason;
 
       if (!reason) {
-        return res.status(400).json({ error: "reason is required" });
+        return res.status(400).json(fieldError("reason", "reason is required"));
       }
 
       const booking = bookingModel.getBooking(bookingId);

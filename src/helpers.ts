@@ -65,3 +65,25 @@ export function getErrors(
     ),
   );
 }
+
+/** Every error response has a human-readable `error`. Problems tied to a
+ * request field additionally carry `errors`, keyed by field name. */
+export interface ErrorResponse {
+  error: string;
+  errors?: Record<string, string>;
+}
+
+/** 400 body for one or more failed field validations (see getErrors). */
+export function validationError(
+  errors: Record<string, string>,
+): ErrorResponse {
+  return {
+    error: `Invalid request: ${Object.keys(errors).join(", ")}`,
+    errors,
+  };
+}
+
+/** Body for a single problem attributed to one request field. */
+export function fieldError(field: string, message: string): ErrorResponse {
+  return { error: message, errors: { [field]: message } };
+}

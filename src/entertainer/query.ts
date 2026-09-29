@@ -1,5 +1,6 @@
 /** Read side: GET entertainer info from in-memory model */
 import { Request, Response, Router } from "shimmiestack";
+import { ErrorResponse } from "../helpers";
 import { Entertainer, EntertainerModelType } from "./model";
 
 export function EntertainerQuery(
@@ -11,7 +12,7 @@ export function EntertainerQuery(
     "/:id",
     (
       req: Request<{ id: string }>,
-      res: Response<Entertainer | { error: string }>,
+      res: Response<Entertainer | ErrorResponse>,
     ) => {
       const { id } = req.params;
       const entertainer = entertainerModel.getEntertainer(id);

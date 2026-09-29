@@ -2,7 +2,12 @@
 import { randomUUID } from "crypto";
 import { Request, Response, Router, StackType } from "shimmiestack";
 import { RecordModels, SubscribeModels } from "../events";
-import { getErrors, metaFrom, requireNonEmptyString, requirePositiveInt } from "../helpers";
+import {
+  ErrorResponse,
+  getErrors,
+  metaFrom, requireNonEmptyString, requirePositiveInt,
+  validationError,
+} from "../helpers";
 
 interface CreateVenueRequest {
   name: string;
@@ -18,9 +23,7 @@ export function VenueCommand(
     "/",
     async (
       req: Request<{}, {}, CreateVenueRequest>,
-      res: Response<
-        { venueId: string } | { errors: Record<string, string> }
-      >,
+      res: Response<{ venueId: string } | ErrorResponse>,
     ) => {
       const { name, capacity } = req.body;
 
@@ -32,7 +35,7 @@ export function VenueCommand(
       const errors = getErrors(validation);
 
       if (Object.keys(errors).length > 0) {
-        return res.status(400).json({ errors });
+        return res.status(400).json(validationError(errors));
       }
 
       const venueId = randomUUID();

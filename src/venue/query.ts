@@ -1,4 +1,5 @@
 import { Request, Response, Router } from "shimmiestack";
+import { ErrorResponse } from "../helpers";
 import { Booking, BookingModelType } from "../booking/model";
 import { Venue, VenueModelType } from "./model";
 
@@ -12,7 +13,7 @@ export function VenueQuery(
     "/:id",
     (
       req: Request<{ id: string }>,
-      res: Response<Venue | { error: string }>,
+      res: Response<Venue | ErrorResponse>,
     ) => {
       const { id } = req.params;
       const venue = venueModel.getVenue(id);

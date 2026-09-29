@@ -21,5 +21,6 @@ body:json {
 
 assert {
   res.status: eq 404
+  res.body.error: isString
   res.body.errors.venueId: isString
 }

@@ -88,6 +88,7 @@ describe("confirming a booking", () => {
       expectedResponseCode: 400,
     });
     expect(res.body.errors.feeCents).toBeTruthy();
+    expect(res.body.error).toBeTruthy();
   });
 
   it("should return 404 for an unknown venue", async () => {
@@ -98,6 +99,7 @@ describe("confirming a booking", () => {
       expectedResponseCode: 404,
     });
     expect(res.body.errors.venueId).toContain("nowhere");
+    expect(res.body.error).toBeTruthy();
   });
 
   it("should return 404 for an unknown entertainer", async () => {
@@ -108,6 +110,7 @@ describe("confirming a booking", () => {
       expectedResponseCode: 404,
     });
     expect(res.body.errors.entertainerId).toContain("nobody");
+    expect(res.body.error).toBeTruthy();
   });
 
   it("should list upcoming bookings for a venue, soonest first", async () => {
@@ -198,5 +201,31 @@ describe("cancelling a booking", () => {
       body: { reason: "second" },
       expectedResponseCode: 409,
     });
+  });
+});
+
+describe("error responses", () => {
+  it("should use the same shape for an unknown booking on cancel and on record-payment", async () => {
+    const { stack } = await makeSeededStack();
+
+    const cancel = await stack.testPost({
+      path: "/bookings/nope/cancel",
+      body: { reason: "x" },
+      expectedResponseCode: 404,
+    });
+    const pay = await stack.testPost({
+      path: "/bookings/nope/payments",
+      body: {
+        reference: "r",
+        amountCents: 1,
+        paidAt: "2030-01-01T00:00:00.000Z",
+      },
+      expectedResponseCode: 404,
+    });
+
+    expect(cancel.body.error).toBeTruthy();
+    expect(pay.body.error).toBeTruthy();
+    expect(Object.keys(cancel.body).every((k) => ["error", "errors"].includes(k))).toBe(true);
+    expect(Object.keys(pay.body).every((k) => ["error", "errors"].includes(k))).toBe(true);
   });
 });

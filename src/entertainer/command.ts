@@ -2,7 +2,12 @@
 import { randomUUID } from "crypto";
 import { Request, Response, Router, StackType } from "shimmiestack";
 import { RecordModels, SubscribeModels } from "../events";
-import { getErrors, metaFrom, requireNonEmptyString } from "../helpers";
+import {
+  ErrorResponse,
+  getErrors,
+  metaFrom, requireNonEmptyString,
+  validationError,
+} from "../helpers";
 
 interface CreateEntertainerRequest {
   name: string;
@@ -18,9 +23,7 @@ export function EntertainerCommand(
     "/",
     async (
       req: Request<{}, {}, CreateEntertainerRequest>,
-      res: Response<
-        { entertainerId: string } | { errors: Record<string, string> }
-      >,
+      res: Response<{ entertainerId: string } | ErrorResponse>,
     ) => {
       const { name, genre } = req.body;
 
@@ -32,7 +35,7 @@ export function EntertainerCommand(
       const errors = getErrors(validation);
 
       if (Object.keys(errors).length > 0) {
-        return res.status(400).json({ errors });
+        return res.status(400).json(validationError(errors));
       }
 
       const entertainerId = randomUUID();

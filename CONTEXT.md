@@ -8,3 +8,4 @@ Domain terms for the booking ledger.
 - **Outstanding**: the fee still owed on a booking. Zero once paid in full, and always zero once the booking is cancelled.
 - **Cancelled-booking payment**: a payment recorded against a cancelled booking (for example a deposit paid before cancellation). It is always recorded and still counts as paid; the fee is simply no longer owed. Returning the money is a separate future event (refund).
 - **Earnings**: an entertainer's summary of paid and outstanding across all their bookings, with a per-booking breakdown. Served by the Earnings module (`src/earnings/`), which is its own read model built from booking, payment and entertainer events.
+- **Error response**: every error body has `error` (a human-readable string). Problems tied to a request field also carry `errors`, keyed by field name. Successful responses never include either.

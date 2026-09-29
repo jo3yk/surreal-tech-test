@@ -127,6 +127,7 @@ describe("recording a payment", () => {
 
     const res = await pay(stack, bookingId, { ...aPayment, ...override }, 400);
     expect(res.body.errors[field]).toBeTruthy();
+    expect(res.body.error).toBeTruthy();
 
     expect((await earnings(stack)).totalPaidCents).toBe(0);
   });
@@ -135,6 +136,7 @@ describe("recording a payment", () => {
     const { stack } = await makeSeededStack();
     const res = await pay(stack, "nope", aPayment, 404);
     expect(res.body.errors.bookingId).toBeTruthy();
+    expect(res.body.error).toBeTruthy();
   });
 
   it("should accumulate partial payments up to the full fee", async () => {
@@ -197,6 +199,7 @@ describe("payment idempotency", () => {
 
     const res = await pay(stack, bookingId, { ...aPayment, amountCents: 999 }, 409);
     expect(res.body.errors.reference).toBeTruthy();
+    expect(res.body.error).toBeTruthy();
 
     // ...including against another booking
     const other = await book(stack, { startsAt: "2030-02-01T20:00:00.000Z" });

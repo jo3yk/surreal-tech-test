@@ -16,6 +16,7 @@ body:json {
 
 assert {
   res.status: eq 400
+  res.body.error: isString
   res.body.errors.reference: isString
   res.body.errors.amountCents: isString
   res.body.errors.paidAt: isString

@@ -1,5 +1,6 @@
 /** Read side: GET entertainer earnings from the earnings model. */
 import { Request, Response, Router } from "shimmiestack";
+import { ErrorResponse } from "../helpers";
 import { EarningsModelType, EntertainerEarnings } from "./model";
 
 export function EarningsQuery(earningsModel: EarningsModelType): Router {
@@ -9,7 +10,7 @@ export function EarningsQuery(earningsModel: EarningsModelType): Router {
     "/:id/earnings",
     (
       req: Request<{ id: string }>,
-      res: Response<EntertainerEarnings | { error: string }>,
+      res: Response<EntertainerEarnings | ErrorResponse>,
     ) => {
       const { id } = req.params;
       const earnings = earningsModel.getEarnings(id);
