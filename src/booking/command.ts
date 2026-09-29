@@ -12,10 +12,12 @@ import {
   metaFrom,
   requireNonEmptyString,
   requireNonNegativeInt,
-  requireIsoDate
+  requireIsoDate,
+  requirePositiveInt,
 } from "../helpers";
 import { VenueModelType } from "../venue/model";
 import { EntertainerModelType } from "../entertainer/model";
+import { PaymentModelType } from "../payment/model";
 
 interface CreateBookingRequest {
   venueId: string;
@@ -24,11 +26,18 @@ interface CreateBookingRequest {
   startsAt: string;
 }
 
+interface RecordPaymentRequest {
+  reference: string;
+  amountCents: number;
+  paidAt: string;
+}
+
 export function BookingCommand(
   stack: StackType<RecordModels, SubscribeModels>,
   bookingModel: BookingModelType,
   venueModel: VenueModelType,
   entertainerModel: EntertainerModelType,
+  paymentModel: PaymentModelType,
 ): Router {
   const router = Router();
 
@@ -65,7 +74,7 @@ export function BookingCommand(
       if (!entertainer) {
         return res.status(404).json({
           errors: { entertainerId: `Unknown entertainer ${entertainerId}` },
-        })
+        });
       }
 
       const bookingId = randomUUID();
@@ -86,6 +95,82 @@ export function BookingCommand(
       });
 
       return res.status(201).json({ bookingId });
+    },
+  );
+
+  router.post(
+    "/:bookingId/payments",
+    async (
+      req: Request<{ bookingId: string }, {}, RecordPaymentRequest>,
+      res: Response<{ paymentId: string } | { errors: Record<string, string> }>,
+    ) => {
+      const { bookingId } = req.params;
+      const { reference, amountCents, paidAt } = req.body;
+
+      const validation = {
+        bookingId: requireNonEmptyString(bookingId, "bookingId"),
+        reference: requireNonEmptyString(reference, "reference"),
+        amountCents: requirePositiveInt(amountCents, "amountCents"),
+        paidAt: requireIsoDate(paidAt, "paidAt"),
+      };
+
+      const errors = getErrors(validation);
+
+      if (Object.keys(errors).length > 0) {
+        return res.status(400).json({ errors });
+      }
+
+      const booking = bookingModel.getBooking(bookingId);
+      if (!booking) {
+        return res.status(404).json({
+          errors: {
+            bookingId: `Booking with id ${bookingId} not found`,
+          },
+        });
+      }
+
+      // Deliberately no status check: payments against cancelled bookings are
+      // recorded so they can be refunded.
+
+      // Idempotency: a retry with the same reference is a no-op (200);
+      // reusing the reference for a different payment is a client bug (409).
+      // Note: check-then-record isn't atomic, so two concurrent requests with
+      // the same reference could both record. Closing that needs a uniqueness
+      // constraint in the event base.
+      const existing = paymentModel.getPaymentByReference(reference);
+      if (existing) {
+        if (
+          existing.bookingId === bookingId &&
+          existing.amountCents === amountCents &&
+          Date.parse(existing.paidAt) === Date.parse(paidAt)
+        ) {
+          return res.status(200).json({ paymentId: existing.paymentId });
+        } else {
+          return res.status(409).json({
+            errors: {
+              reference: `Reference ${reference} already used for a different payment`,
+            },
+          });
+        }
+      }
+
+      const paymentId = randomUUID();
+      const streamId = `payment-${paymentId}`;
+
+      await stack.recordUncheckedEvent({
+        streamId,
+        eventName: "PAYMENT_RECORDED_EVENT",
+        eventData: {
+          paymentId,
+          reference,
+          bookingId,
+          amountCents,
+          paidAt,
+        },
+        meta: metaFrom(req),
+      });
+
+      return res.status(201).json({ paymentId });
     },
   );
 

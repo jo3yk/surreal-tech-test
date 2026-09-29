@@ -6,13 +6,15 @@ import { RecordModels, SubscribeModels } from "../src/events";
 import { VenueQuery } from "../src/venue/query";
 import { EntertainerModel } from "../src/entertainer/model";
 import { VenueModel } from "../src/venue/model";
+import { PaymentModel } from "../src/payment/model";
 
 function makeStack() {
   const stack = ShimmieTestStack<RecordModels, SubscribeModels>();
   const bookingModel = BookingModel(stack);
   const venueModel = VenueModel(stack);
   const entertainerModel = EntertainerModel(stack);
-  stack.mountTest(BookingCommand(stack, bookingModel, venueModel, entertainerModel), "/bookings");
+  const paymentModel = PaymentModel(stack);
+  stack.mountTest(BookingCommand(stack, bookingModel, venueModel, entertainerModel, paymentModel), "/bookings");
   stack.mountTest(BookingQuery(bookingModel), "/bookings");
   stack.mountTest(VenueQuery(bookingModel, venueModel), "/venues");
   return { stack, bookingModel };

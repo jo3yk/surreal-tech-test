@@ -2,13 +2,17 @@ import ShimmieTestStack from "shimmiestack/shimmieteststack";
 import { EntertainerCommand } from "../src/entertainer/command";
 import { EntertainerModel } from "../src/entertainer/model";
 import { EntertainerQuery } from "../src/entertainer/query";
+import { BookingModel } from "../src/booking/model";
+import { PaymentModel } from "../src/payment/model";
 import { RecordModels, SubscribeModels } from "../src/events";
 
 function makeStack() {
   const stack = ShimmieTestStack<RecordModels, SubscribeModels>();
   const entertainerModel = EntertainerModel(stack);
+  const bookingModel = BookingModel(stack);
+  const paymentModel = PaymentModel(stack);
   stack.mountTest(EntertainerCommand(stack), "/entertainers");
-  stack.mountTest(EntertainerQuery(entertainerModel), "/entertainers");
+  stack.mountTest(EntertainerQuery(entertainerModel, bookingModel, paymentModel), "/entertainers");
   return { stack };
 }
 

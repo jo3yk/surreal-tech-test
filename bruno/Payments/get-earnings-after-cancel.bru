@@ -1,0 +1,18 @@
+meta {
+  name: Get entertainer earnings after cancellation
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/entertainers/{{entertainerId}}/earnings
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.totalPaidCents: eq 15000
+  res.body.totalOutstandingCents: eq 0
+  res.body.bookings[0].status: eq cancelled
+}

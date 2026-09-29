@@ -1,0 +1,23 @@
+meta {
+  name: Record payment - invalid (400)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/bookings/{{paymentBookingId}}/payments
+  body: json
+  auth: none
+}
+
+body:json {
+  {"reference":"","amountCents":0,"paidAt":"nope"}
+}
+
+assert {
+  res.status: eq 400
+  res.body.errors.reference: isString
+  res.body.errors.amountCents: isString
+  res.body.errors.paidAt: isString
+}
+
