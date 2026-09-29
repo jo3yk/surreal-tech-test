@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Surreal Booking Ledger",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

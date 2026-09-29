@@ -1,0 +1,17 @@
+meta {
+  name: Get venue
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/venues/{{venueId}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.name: eq The Espy
+  res.body.capacity: eq 300
+}

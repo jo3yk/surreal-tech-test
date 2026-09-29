@@ -1,0 +1,17 @@
+meta {
+  name: Get entertainer
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/entertainers/{{entertainerId}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.name: eq The Amplifiers
+  res.body.genre: eq rock
+}

@@ -1,0 +1,24 @@
+meta {
+  name: Create venue - invalid (400)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/venues
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "",
+    "capacity": 0
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.errors.name: isString
+  res.body.errors.capacity: isString
+}

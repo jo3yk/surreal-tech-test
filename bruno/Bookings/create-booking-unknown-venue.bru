@@ -1,0 +1,25 @@
+meta {
+  name: Create booking - unknown venue (404)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/bookings
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "venueId": "nowhere",
+    "entertainerId": "{{entertainerId}}",
+    "feeCents": 45000,
+    "startsAt": "2030-01-10T20:00:00.000Z"
+  }
+}
+
+assert {
+  res.status: eq 404
+  res.body.errors.venueId: isString
+}

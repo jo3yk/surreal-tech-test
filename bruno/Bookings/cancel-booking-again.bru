@@ -1,0 +1,22 @@
+meta {
+  name: Cancel booking again (409)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/bookings/{{bookingId}}/cancel
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "reason": "second try"
+  }
+}
+
+assert {
+  res.status: eq 409
+  res.body.error: isString
+}

@@ -1,0 +1,29 @@
+meta {
+  name: Create booking
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/bookings
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "venueId": "{{venueId}}",
+    "entertainerId": "{{entertainerId}}",
+    "feeCents": 45000,
+    "startsAt": "2030-01-10T20:00:00.000Z"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.bookingId: isString
+}
+
+script:post-response {
+  bru.setVar("bookingId", res.body.bookingId);
+}

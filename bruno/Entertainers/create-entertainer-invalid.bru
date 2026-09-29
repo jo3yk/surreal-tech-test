@@ -1,0 +1,17 @@
+meta {
+  name: Create entertainer - invalid (400)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/entertainers
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 400
+  res.body.errors.name: isString
+  res.body.errors.genre: isString
+}
