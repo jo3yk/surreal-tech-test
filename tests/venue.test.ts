@@ -89,6 +89,15 @@ describe("validating a new venue", () => {
     expect(Object.keys(res.body.errors).sort()).toEqual(["capacity", "name"]);
     expect(res.body.error).toBeTruthy();
   });
+
+  it("should reject a request with no body", async () => {
+    const { stack } = makeStack();
+    const res = await stack.testPost({
+      path: "/venues",
+      expectedResponseCode: 400,
+    });
+    expect(Object.keys(res.body.errors).sort()).toEqual(["capacity", "name"]);
+  });
 });
 
 describe("fetching a venue", () => {

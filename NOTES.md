@@ -15,6 +15,8 @@ Added `PAYMENT_RECORDED_EVENT`, `POST /bookings/:id/payments`, a payment read mo
 Re: **the wrinkle** - payments are always recorded regardless of booking status. A payment is a fact about money that has already moved, so refusing it would make the ledger disagree with the bank. A cancelled booking keeps its `paidCents` (counted in `totalPaidCents`) and has `outstandingCents = 0`, since the fee is no longer owed. Refunds are future work and should be their own event.
 
 Caveats:
-- Included a field `reference` as the client's idempotency key. A retry with the same booking, amount and instant returns 200 with the original `paymentId`; the same reference with different details returns 409. However, if two concurrent requests come in with the same reference, we could still log duplicates without a uniqueness constraint in the event base.
-- Overpayments are not handled. `paidCents` may exceed a booking's `feeCents`. `outstandingCents` is floored at 0.
+- Included a field `reference` as the client's idempotency key. A retry with the same data returns 200 with the original `paymentId`; the same reference with different details returns 409. The code checks for an existing reference and then records the payment, and those two steps aren't atomic. With the in-memory event base this doesn't cause duplicates in practice, because the code never pauses between the check and the update of the read model, so a second request can't sneak in. With a real database (e.g. Postgres), two simultaneous requests with the same reference could both pass the check and both record a payment - we would need a uniqueness constraint on the reference.
+- Overpayments are not handled. `paidCents` may exceed a booking's `feeCents`. `outstandingCents` is floored at 0. Similar to the comment about booking status, this is on the assumption that payments have been processed separately on the bank side and we are simply logging them here.
+
+
 

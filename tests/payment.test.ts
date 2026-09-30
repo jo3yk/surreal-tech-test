@@ -117,6 +117,11 @@ describe("recording a payment", () => {
 
   it.each([
     ["a missing reference", { reference: "" }, "reference"],
+    ["an absent reference", { reference: undefined }, "reference"],
+    ["a non-string reference", { reference: 123 }, "reference"],
+    ["a string amount", { amountCents: "100" }, "amountCents"],
+    ["an absent amount", { amountCents: undefined }, "amountCents"],
+    ["an absent paidAt", { paidAt: undefined }, "paidAt"],
     ["a zero amount", { amountCents: 0 }, "amountCents"],
     ["a fractional amount", { amountCents: 10.5 }, "amountCents"],
     ["a negative amount", { amountCents: -5 }, "amountCents"],
@@ -130,6 +135,21 @@ describe("recording a payment", () => {
     expect(res.body.error).toBeTruthy();
 
     expect((await earnings(stack)).totalPaidCents).toBe(0);
+  });
+
+  it("should reject a payment request with no body", async () => {
+    const { stack } = await makeSeededStack();
+    const bookingId = await book(stack);
+
+    const res = await stack.testPost({
+      path: `/bookings/${bookingId}/payments`,
+      expectedResponseCode: 400,
+    });
+    expect(Object.keys(res.body.errors).sort()).toEqual([
+      "amountCents",
+      "paidAt",
+      "reference",
+    ]);
   });
 
   it("should return 404 for an unknown booking", async () => {
@@ -190,6 +210,15 @@ describe("payment idempotency", () => {
 
     await pay(stack, bookingId, aPayment, 201);
     await pay(stack, bookingId, { ...aPayment, paidAt: "2030-01-01T10:00:00+01:00" }, 200);
+  });
+
+  it("should return 409 when a reference is reused with a different paidAt", async () => {
+    const { stack } = await makeSeededStack();
+    const bookingId = await book(stack);
+    await pay(stack, bookingId, aPayment);
+
+    const res = await pay(stack, bookingId, { ...aPayment, paidAt: "2030-01-02T09:00:00.000Z" }, 409);
+    expect(res.body.errors.reference).toBeTruthy();
   });
 
   it("should return 409 when a reference is reused for a different payment", async () => {

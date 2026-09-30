@@ -85,6 +85,16 @@ describe("validating a new entertainer", () => {
     expect(Object.keys(res.body.errors).sort()).toEqual(["genre", "name"]);
     expect(res.body.error).toBeTruthy();
   });
+
+  it("should reject a request with no body", async () => {
+    const { stack } = makeStack();
+    const res = await stack.testPost({
+      path: "/entertainers",
+      expectedResponseCode: 400,
+    });
+    expect(res.body.errors.name).toBeTruthy();
+    expect(res.body.error).toBeTruthy();
+  });
 });
 
 describe("fetching an entertainer", () => {

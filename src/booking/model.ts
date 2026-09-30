@@ -58,7 +58,6 @@ export function BookingModel(stack: StackType<RecordModels, SubscribeModels>) {
   });
 
   return {
-    getBookings: (): Booking[] => Array.from(bookingsById.values()),
     getBooking: (bookingId: string): Booking | undefined =>
       bookingsById.get(bookingId),
 
@@ -73,7 +72,7 @@ export function BookingModel(stack: StackType<RecordModels, SubscribeModels>) {
             booking.status === "booked" &&
             new Date(booking.startsAt) >= from,
         )
-        .sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
+        .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt)),
   };
 }
 

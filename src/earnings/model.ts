@@ -72,7 +72,9 @@ export function EarningsModel(stack: StackType<RecordModels, SubscribeModels>) {
       status: "booked",
     });
     const ids = bookingIdsByEntertainer.get(entertainerId) ?? [];
-    ids.push(bookingId);
+    if (!ids.includes(bookingId)) {
+      ids.push(bookingId);
+    }
     bookingIdsByEntertainer.set(entertainerId, ids);
   });
 
@@ -120,7 +122,7 @@ export function EarningsModel(stack: StackType<RecordModels, SubscribeModels>) {
       }
       const bookings = (bookingIdsByEntertainer.get(entertainerId) ?? [])
         .map((id) => toBookingEarnings(bookingsById.get(id)!))
-        .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+        .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
       return {
         entertainerId,
         entertainerName,

@@ -91,6 +91,78 @@ describe("confirming a booking", () => {
     expect(res.body.error).toBeTruthy();
   });
 
+  it.each([
+    ["missing venueId", { venueId: undefined }, "venueId"],
+    ["blank venueId", { venueId: "  " }, "venueId"],
+    ["missing entertainerId", { entertainerId: undefined }, "entertainerId"],
+    ["negative fee", { feeCents: -1 }, "feeCents"],
+    ["fractional fee", { feeCents: 10.5 }, "feeCents"],
+    ["string fee", { feeCents: "450" }, "feeCents"],
+    ["missing startsAt", { startsAt: undefined }, "startsAt"],
+    ["invalid startsAt", { startsAt: "not-a-date" }, "startsAt"],
+  ])("should reject a booking with %s", async (_name, override, field) => {
+    const { stack } = await makeSeededStack();
+    const res = await stack.testPost({
+      path: "/bookings",
+      body: { ...aBooking, ...override },
+      expectedResponseCode: 400,
+    });
+    expect(res.body.errors[field]).toBeTruthy();
+    expect(res.body.error).toBeTruthy();
+  });
+
+  it("should report every invalid field at once", async () => {
+    const { stack } = await makeSeededStack();
+    const res = await stack.testPost({
+      path: "/bookings",
+      body: { venueId: "", entertainerId: "", feeCents: -5, startsAt: "nope" },
+      expectedResponseCode: 400,
+    });
+    expect(Object.keys(res.body.errors).sort()).toEqual([
+      "entertainerId",
+      "feeCents",
+      "startsAt",
+      "venueId",
+    ]);
+  });
+
+  it("should reject a booking request with no body", async () => {
+    const { stack } = await makeSeededStack();
+    const res = await stack.testPost({
+      path: "/bookings",
+      expectedResponseCode: 400,
+    });
+    expect(Object.keys(res.body.errors).sort()).toEqual([
+      "entertainerId",
+      "feeCents",
+      "startsAt",
+      "venueId",
+    ]);
+  });
+
+  it("should accept a zero fee", async () => {
+    const { stack } = await makeSeededStack();
+    const created = await stack.testPost({
+      path: "/bookings",
+      body: { ...aBooking, feeCents: 0 },
+      expectedResponseCode: 201,
+    });
+    const fetched = await stack.testGet({
+      path: `/bookings/${created.body.bookingId}`,
+      expectedResponseCode: 200,
+    });
+    expect(fetched.body.booking.feeCents).toBe(0);
+  });
+
+  it("should return 404 with the standard error shape for an unknown booking", async () => {
+    const { stack } = await makeSeededStack();
+    const res = await stack.testGet({
+      path: "/bookings/not-a-real-booking",
+      expectedResponseCode: 404,
+    });
+    expect(res.body.error).toBeTruthy();
+  });
+
   it("should return 404 for an unknown venue", async () => {
     const { stack } = await makeSeededStack();
     const res = await stack.testPost({
@@ -141,7 +213,87 @@ describe("confirming a booking", () => {
   });
 });
 
+describe("listing upcoming bookings for a venue", () => {
+  async function seedThree(stack: Awaited<ReturnType<typeof makeSeededStack>>["stack"]) {
+    for (const startsAt of [
+      "2000-01-01T20:00:00.000Z",
+      "2030-02-01T20:00:00.000Z",
+      "2030-03-01T20:00:00.000Z",
+    ]) {
+      await stack.testPost({
+        path: "/bookings",
+        body: { ...aBooking, startsAt },
+        expectedResponseCode: 201,
+      });
+    }
+  }
+
+  it("should exclude past bookings by default", async () => {
+    const { stack } = await makeSeededStack();
+    await seedThree(stack);
+    const list = await stack.testGet({
+      path: "/venues/the-espy/bookings",
+      expectedResponseCode: 200,
+    });
+    expect(list.body.bookings.map((b: any) => b.startsAt)).toEqual([
+      "2030-02-01T20:00:00.000Z",
+      "2030-03-01T20:00:00.000Z",
+    ]);
+  });
+
+  it("should honour the from parameter, inclusive of the boundary", async () => {
+    const { stack } = await makeSeededStack();
+    await seedThree(stack);
+    const list = await stack.testGet({
+      path: "/venues/the-espy/bookings?from=2030-03-01T20:00:00.000Z",
+      expectedResponseCode: 200,
+    });
+    expect(list.body.bookings.map((b: any) => b.startsAt)).toEqual([
+      "2030-03-01T20:00:00.000Z",
+    ]);
+  });
+
+  it("should order by instant when start times use different offsets", async () => {
+    const { stack } = await makeSeededStack();
+    // 2030-01-10T09:00Z is earlier than 2030-01-10T09:30Z, but its string
+    // form ("...20:00:00+11:00") sorts after "...09:30:00Z".
+    for (const startsAt of ["2030-01-10T09:30:00.000Z", "2030-01-10T20:00:00+11:00"]) {
+      await stack.testPost({
+        path: "/bookings",
+        body: { ...aBooking, startsAt },
+        expectedResponseCode: 201,
+      });
+    }
+    const list = await stack.testGet({
+      path: "/venues/the-espy/bookings?from=2030-01-01T00:00:00Z",
+      expectedResponseCode: 200,
+    });
+    expect(list.body.bookings.map((b: any) => b.startsAt)).toEqual([
+      "2030-01-10T20:00:00+11:00",
+      "2030-01-10T09:30:00.000Z",
+    ]);
+  });
+});
+
 describe("cancelling a booking", () => {
+  it.each([
+    ["missing", {}],
+    ["empty", { reason: "" }],
+  ])("should return 400 when the reason is %s", async (_name, body) => {
+    const { stack } = await makeSeededStack();
+    const created = await stack.testPost({
+      path: "/bookings",
+      body: aBooking,
+      expectedResponseCode: 201,
+    });
+    const res = await stack.testPost({
+      path: `/bookings/${created.body.bookingId}/cancel`,
+      body,
+      expectedResponseCode: 400,
+    });
+    expect(res.body.errors.reason).toBeTruthy();
+  });
+
   it("should cancel an existing booking and remove it from the venue upcoming list", async () => {
     const { stack } = await makeSeededStack();
 

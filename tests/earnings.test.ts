@@ -20,29 +20,40 @@ const entertainerCreated = (stack: Stack) =>
     meta,
   });
 
-const bookingConfirmed = (stack: Stack) =>
-  stack.recordUncheckedEvent({
-    streamId: "booking-b1",
+const bookingConfirmed = (
+  stack: Stack,
+  overrides: { bookingId?: string; feeCents?: number; startsAt?: string } = {},
+) => {
+  const bookingId = overrides.bookingId ?? "b1";
+  return stack.recordUncheckedEvent({
+    streamId: `booking-${bookingId}`,
     eventName: "BOOKING_CONFIRMED_EVENT",
     eventData: {
-      bookingId: "b1",
+      bookingId,
       venueId: "v1",
       entertainerId: "ent-1",
       entertainerName: "The Amplifiers",
       feeCents: 45000,
       startsAt: "2030-01-10T20:00:00.000Z",
+      ...overrides,
     },
     meta,
   });
+};
 
-const paymentRecorded = (stack: Stack, paymentId: string, amountCents: number) =>
+const paymentRecorded = (
+  stack: Stack,
+  paymentId: string,
+  amountCents: number,
+  bookingId = "b1",
+) =>
   stack.recordUncheckedEvent({
     streamId: `payment-${paymentId}`,
     eventName: "PAYMENT_RECORDED_EVENT",
     eventData: {
       paymentId,
       reference: `ref-${paymentId}`,
-      bookingId: "b1",
+      bookingId,
       amountCents,
       paidAt: "2030-01-01T09:00:00.000Z",
     },
@@ -107,6 +118,62 @@ describe("earnings model event handling", () => {
     expect(result?.totalPaidCents).toBe(10000);
     expect(result?.totalOutstandingCents).toBe(0);
     expect(result?.bookings[0].status).toBe("cancelled");
+  });
+
+  it("should total outstanding across bookings, excluding cancelled ones", async () => {
+    const { stack, earnings } = makeStack();
+    await entertainerCreated(stack);
+    await bookingConfirmed(stack); // b1: 45000, cancelled below
+    await bookingConfirmed(stack, { bookingId: "b2", feeCents: 20000 });
+    await paymentRecorded(stack, "p1", 5000);
+    await paymentRecorded(stack, "p2", 5000, "b2");
+    await bookingCancelled(stack);
+
+    const result = earnings.getEarnings("ent-1");
+    expect(result?.totalPaidCents).toBe(10000);
+    expect(result?.totalOutstandingCents).toBe(15000);
+  });
+
+  it("should handle a waived (zero) fee", async () => {
+    const { stack, earnings } = makeStack();
+    await entertainerCreated(stack);
+    await bookingConfirmed(stack, { feeCents: 0 });
+
+    expect(earnings.getEarnings("ent-1")?.bookings[0]).toMatchObject({
+      feeCents: 0,
+      paidCents: 0,
+      outstandingCents: 0,
+    });
+  });
+
+  it("should not double-count a booking confirmed twice with the same id", async () => {
+    const { stack, earnings } = makeStack();
+    await entertainerCreated(stack);
+    await bookingConfirmed(stack);
+    await bookingConfirmed(stack);
+
+    const result = earnings.getEarnings("ent-1");
+    expect(result?.bookings).toHaveLength(1);
+    expect(result?.totalOutstandingCents).toBe(45000);
+  });
+
+  it("should order bookings by instant, not by string, across offsets", async () => {
+    const { stack, earnings } = makeStack();
+    await entertainerCreated(stack);
+    await bookingConfirmed(stack, { bookingId: "late", startsAt: "2030-01-10T09:30:00.000Z" });
+    await bookingConfirmed(stack, { bookingId: "early", startsAt: "2030-01-10T20:00:00+11:00" });
+
+    expect(earnings.getEarnings("ent-1")?.bookings.map((b) => b.bookingId)).toEqual([
+      "early",
+      "late",
+    ]);
+  });
+
+  it("should return undefined when bookings exist but the entertainer was never created", async () => {
+    const { stack, earnings } = makeStack();
+    await bookingConfirmed(stack);
+
+    expect(earnings.getEarnings("ent-1")).toBeUndefined();
   });
 
   it("should not let callers mutate the model through returned payments", async () => {

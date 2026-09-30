@@ -32,7 +32,7 @@ export function VenueQuery(
     ) => {
       const from = req.query.from
         ? new Date(String(req.query.from))
-        : new Date(0);
+        : undefined; // model defaults to now
       return res.status(200).json({
         bookings: bookingModel.getUpcomingBookingsForVenue(req.params.id, from),
       });
