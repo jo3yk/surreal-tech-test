@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: surreal
       POSTGRES_DB: surreal
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -23,7 +23,7 @@ services:
       DEBUG_ENDPOINTS: "true"
       DATABASE_URL: postgres://surreal:surreal@postgres:5432/surreal
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     depends_on:
       postgres:
         condition: service_healthy

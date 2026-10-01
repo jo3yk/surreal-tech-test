@@ -31,6 +31,15 @@ export function PostgresEventBase(connectionString: string, poolSize?: number) {
   );
 }
 
+function parsePoolSize(raw: string | undefined): number | undefined {
+  if (!raw) return undefined;
+  const size = Number(raw);
+  if (!Number.isInteger(size) || size < 1) {
+    throw new Error(`PG_POOL_SIZE must be a positive integer; got "${raw}"`);
+  }
+  return size;
+}
+
 export function createEventBase(env: NodeJS.ProcessEnv = process.env) {
   const type = (env.DB_TYPE ?? "memory").toLowerCase();
   switch (type) {
@@ -42,7 +51,7 @@ export function createEventBase(env: NodeJS.ProcessEnv = process.env) {
       }
       return PostgresEventBase(
         env.DATABASE_URL,
-        env.PG_POOL_SIZE ? Number(env.PG_POOL_SIZE) : undefined,
+        parsePoolSize(env.PG_POOL_SIZE),
       );
     }
     default:

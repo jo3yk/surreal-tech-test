@@ -22,4 +22,17 @@ describe("createEventBase", () => {
   it("rejects an unknown DB_TYPE", () => {
     expect(() => createEventBase({ DB_TYPE: "mysql" })).toThrow(/Unknown DB_TYPE/);
   });
+
+  it.each(["abc", "0", "-3", "2.5"])(
+    "rejects invalid PG_POOL_SIZE %s",
+    (size) => {
+      expect(() =>
+        createEventBase({
+          DB_TYPE: "postgres",
+          DATABASE_URL: "postgres://u:p@localhost:5432/db",
+          PG_POOL_SIZE: size,
+        }),
+      ).toThrow(/PG_POOL_SIZE/);
+    },
+  );
 });
