@@ -230,11 +230,19 @@ describe("payment idempotency", () => {
     expect(res.body.errors.reference).toBeTruthy();
     expect(res.body.error).toBeTruthy();
 
-    // ...including against another booking
-    const other = await book(stack, { startsAt: "2030-02-01T20:00:00.000Z" });
-    await pay(stack, other, aPayment, 409);
-
     expect((await earnings(stack)).totalPaidCents).toBe(10000);
+  });
+
+  it("should allow the same reference on a different booking", async () => {
+    const { stack } = await makeSeededStack();
+    const bookingId = await book(stack);
+    const other = await book(stack, { startsAt: "2030-02-01T20:00:00.000Z" });
+
+    const first = await pay(stack, bookingId, aPayment, 201);
+    const second = await pay(stack, other, aPayment, 201);
+    expect(second.body.paymentId).not.toBe(first.body.paymentId);
+
+    expect((await earnings(stack)).totalPaidCents).toBe(20000);
   });
 });
 

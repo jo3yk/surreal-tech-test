@@ -1,11 +1,7 @@
 /** Write side: validate, then record events. State updates via the model. */
 import { randomUUID } from "crypto";
 import { Request, Response, Router, StackType } from "shimmiestack";
-import {
-  BookingConfirmedEvent,
-  RecordModels,
-  SubscribeModels,
-} from "../events";
+import { RecordModels, SubscribeModels } from "../events";
 import { BookingModelType } from "./model";
 import {
   getErrors,
@@ -130,18 +126,20 @@ export function BookingCommand(
         );
       }
 
-      // Deliberately no status check: payments against cancelled bookings are
-      // recorded so they can be refunded.
+      // Deliberately no status check: a payment is a fact about money that has
+      // already moved (e.g. a deposit paid before a cancellation), so we always
+      // record it. Earnings still counts it as paid; refunds would be a
+      // separate event. See earnings/model.ts.
 
-      // Idempotency: a retry with the same reference is a no-op (200);
-      // reusing the reference for a different payment is a client bug (409).
+      // Idempotency: references are unique per booking. A retry with the same
+      // reference is a no-op (200); reusing it on this booking for a different
+      // payment is a client bug (409).
       // Note: check-then-record isn't atomic, so two concurrent requests with
       // the same reference could both record. Closing that needs a uniqueness
       // constraint in the event base.
-      const existing = paymentModel.getPaymentByReference(reference);
+      const existing = paymentModel.getPayment(bookingId, reference);
       if (existing) {
         if (
-          existing.bookingId === bookingId &&
           existing.amountCents === amountCents &&
           Date.parse(existing.paidAt) === Date.parse(paidAt)
         ) {
@@ -150,7 +148,7 @@ export function BookingCommand(
           return res.status(409).json(
             fieldError(
               "reference",
-              `Reference ${reference} already used for a different payment`,
+              `Reference ${reference} already used for a different payment on this booking`,
             ),
           );
         }

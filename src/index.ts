@@ -8,11 +8,12 @@ import { EntertainerModel } from "./entertainer/model";
 import { EarningsModel } from "./earnings/model";
 import { EarningsQuery } from "./earnings/query";
 import { EntertainerQuery } from "./entertainer/query";
-import { MemoryEventBase } from "./eventbase";
+import { createEventBase } from "./eventbase";
 import { RecordModels, SubscribeModels } from "./events";
 import { VenueCommand } from "./venue/command";
 import { VenueQuery } from "./venue/query";
 import { VenueModel } from "./venue/model";
+import { DebugQuery } from "./debug";
 import { PaymentModel } from "./payment/model";
 
 const stack = ShimmieStack<RecordModels, SubscribeModels>(
@@ -20,8 +21,8 @@ const stack = ShimmieStack<RecordModels, SubscribeModels>(
     ServerPort: Number(process.env.PORT ?? 8080),
     enforceAuthorization: false,
   },
-  /** In-memory event base; restart loses the log. */
-  MemoryEventBase(),
+  /** DB_TYPE=memory (default; restart loses the log) or postgres. */
+  createEventBase(),
   noAuthorization,
 );
 
@@ -31,8 +32,12 @@ const venueModel = VenueModel(stack);
 const entertainerModel = EntertainerModel(stack);
 const paymentModel = PaymentModel(stack);
 const earningsModel = EarningsModel(stack);
+stack.setApiVersion("/v1");
+if (process.env.DEBUG_ENDPOINTS === "true") {
+  stack.mountProcessor("Debug", "/debug", DebugQuery());
+}
+
 stack
-  .setApiVersion("/v1")
   .mountProcessor(
     "Booking Command",
     "/bookings",

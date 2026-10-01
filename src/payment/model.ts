@@ -16,15 +16,24 @@ export interface Payment {
 }
 
 export function PaymentModel(stack: StackType<RecordModels, SubscribeModels>) {
-  const paymentsByReference = new Map<string, PaymentRecordedEvent>();
+  // A reference only needs to be unique within a booking, so key on both.
+  const paymentsByBookingReference = new Map<string, PaymentRecordedEvent>();
+  const key = (bookingId: string, reference: string) =>
+    JSON.stringify([bookingId, reference]);
 
   stack.subscribe("PAYMENT_RECORDED_EVENT", (event) => {
-    paymentsByReference.set(event.data.reference, event.data);
+    paymentsByBookingReference.set(
+      key(event.data.bookingId, event.data.reference),
+      event.data,
+    );
   });
 
   return {
-    getPaymentByReference: (reference: string): PaymentRecordedEvent | undefined =>
-      paymentsByReference.get(reference),
+    getPayment: (
+      bookingId: string,
+      reference: string,
+    ): PaymentRecordedEvent | undefined =>
+      paymentsByBookingReference.get(key(bookingId, reference)),
   };
 }
 export type PaymentModelType = ReturnType<typeof PaymentModel>;
