@@ -1,0 +1,22 @@
+meta {
+  name: Cancel booking - unknown (404)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/bookings/not-a-real-booking/cancel
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "reason": "why not"
+  }
+}
+
+assert {
+  res.status: eq 404
+  res.body.error: isString
+}

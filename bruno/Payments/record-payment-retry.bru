@@ -1,0 +1,21 @@
+meta {
+  name: Record payment - idempotent retry (200)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/bookings/{{paymentBookingId}}/payments
+  body: json
+  auth: none
+}
+
+body:json {
+  {"reference":"{{paymentRef}}","amountCents":10000,"paidAt":"2030-01-01T09:00:00.000Z"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.paymentId: eq {{paymentId}}
+}
+

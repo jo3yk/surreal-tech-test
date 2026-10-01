@@ -1,0 +1,16 @@
+meta {
+  name: Get entertainer earnings - unknown (404)
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/entertainers/not-a-real-entertainer/earnings
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 404
+  res.body.error: isString
+}

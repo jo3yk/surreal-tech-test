@@ -1,0 +1,27 @@
+meta {
+  name: Create venue
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/venues
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "The Espy",
+    "capacity": 300
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.venueId: isString
+}
+
+script:post-response {
+  bru.setVar("venueId", res.body.venueId);
+}

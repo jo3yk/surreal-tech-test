@@ -1,0 +1,38 @@
+import { MemoryEventBase, createEventBase } from "../src/eventbase";
+
+describe("MemoryEventBase", () => {
+  it("should report -1 as the latest sequence number for an empty log", async () => {
+    const base = MemoryEventBase();
+    await expect(base.getLatestSequenceNumber()).resolves.toBe(-1);
+  });
+});
+
+describe("createEventBase", () => {
+  it("defaults to the memory event base", async () => {
+    const base = createEventBase({});
+    await expect(base.getLatestSequenceNumber()).resolves.toBe(-1);
+  });
+
+  it("requires DATABASE_URL for postgres", () => {
+    expect(() => createEventBase({ DB_TYPE: "postgres" })).toThrow(
+      /DATABASE_URL/,
+    );
+  });
+
+  it("rejects an unknown DB_TYPE", () => {
+    expect(() => createEventBase({ DB_TYPE: "mysql" })).toThrow(/Unknown DB_TYPE/);
+  });
+
+  it.each(["abc", "0", "-3", "2.5"])(
+    "rejects invalid PG_POOL_SIZE %s",
+    (size) => {
+      expect(() =>
+        createEventBase({
+          DB_TYPE: "postgres",
+          DATABASE_URL: "postgres://u:p@localhost:5432/db",
+          PG_POOL_SIZE: size,
+        }),
+      ).toThrow(/PG_POOL_SIZE/);
+    },
+  );
+});

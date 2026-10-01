@@ -1,0 +1,22 @@
+meta {
+  name: Record payment - unknown booking (404)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/bookings/not-a-real-booking/payments
+  body: json
+  auth: none
+}
+
+body:json {
+  {"reference":"{{paymentRef}}","amountCents":10000,"paidAt":"2030-01-01T09:00:00.000Z"}
+}
+
+assert {
+  res.status: eq 404
+  res.body.error: isString
+  res.body.errors.bookingId: isString
+}
+

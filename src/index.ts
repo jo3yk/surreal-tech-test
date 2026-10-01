@@ -3,38 +3,53 @@ import { noAuthorization } from "shimmiestack/authorizers";
 import { BookingCommand } from "./booking/command";
 import { BookingModel } from "./booking/model";
 import { BookingQuery } from "./booking/query";
-import { MemoryEventBase } from "./eventbase";
+import { EntertainerCommand } from "./entertainer/command";
+import { EntertainerModel } from "./entertainer/model";
+import { EarningsModel } from "./earnings/model";
+import { EarningsQuery } from "./earnings/query";
+import { EntertainerQuery } from "./entertainer/query";
+import { createEventBase } from "./eventbase";
 import { RecordModels, SubscribeModels } from "./events";
+import { VenueCommand } from "./venue/command";
 import { VenueQuery } from "./venue/query";
+import { VenueModel } from "./venue/model";
+import { DebugQuery } from "./debug";
+import { PaymentModel } from "./payment/model";
 
 const stack = ShimmieStack<RecordModels, SubscribeModels>(
   {
     ServerPort: Number(process.env.PORT ?? 8080),
     enforceAuthorization: false,
   },
-  /** In-memory event base; restart loses the log. */
-  MemoryEventBase(),
+  /** DB_TYPE=memory (default; restart loses the log) or postgres. */
+  createEventBase(),
   noAuthorization,
 );
 
 const bookingModel = BookingModel(stack);
+const venueModel = VenueModel(stack);
+
+const entertainerModel = EntertainerModel(stack);
+const paymentModel = PaymentModel(stack);
+const earningsModel = EarningsModel(stack);
+stack.setApiVersion("/v1");
+if (process.env.DEBUG_ENDPOINTS === "true") {
+  stack.mountProcessor("Debug", "/debug", DebugQuery());
+}
 
 stack
-  .setApiVersion("/v1")
   .mountProcessor(
     "Booking Command",
     "/bookings",
-    BookingCommand(stack, bookingModel),
+    BookingCommand(stack, bookingModel, venueModel, entertainerModel, paymentModel),
   )
   .mountProcessor("Booking Query", "/bookings", BookingQuery(bookingModel))
-  .mountProcessor("Venue Query", "/venues", VenueQuery(bookingModel))
+  .mountProcessor("Venue Command", "/venues", VenueCommand(stack))
+  .mountProcessor("Venue Query", "/venues", VenueQuery(bookingModel, venueModel))
+  .mountProcessor("Entertainer Command", "/entertainers", EntertainerCommand(stack))
+  .mountProcessor("Entertainer Query", "/entertainers", EntertainerQuery(entertainerModel))
+  .mountProcessor("Earnings Query", "/entertainers", EarningsQuery(earningsModel))
   .registerPostInitFn(() => {
-    console.log("Booking ledger is up. Try:");
-    console.log(
-      '  curl -s localhost:8080/v1/bookings -X POST -H "content-type: application/json" \\',
-    );
-    console.log(
-      `    -d '{"venueId":"the-espy","entertainerId":"ent-1","entertainerName":"The Amplifiers","feeCents":45000,"startsAt":"2026-11-05T20:00:00+11:00"}'`,
-    );
+    console.log("Booking ledger is up. Try the Bruno collection in ./bruno");
   })
   .startup();

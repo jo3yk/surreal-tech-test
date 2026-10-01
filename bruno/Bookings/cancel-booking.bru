@@ -1,0 +1,21 @@
+meta {
+  name: Cancel booking
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/bookings/{{bookingId}}/cancel
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "reason": "venue double-booked"
+  }
+}
+
+assert {
+  res.status: eq 200
+}

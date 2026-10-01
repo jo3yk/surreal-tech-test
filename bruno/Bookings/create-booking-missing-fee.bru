@@ -1,0 +1,25 @@
+meta {
+  name: Create booking - missing fee (400)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/bookings
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "venueId": "{{venueId}}",
+    "entertainerId": "{{entertainerId}}",
+    "startsAt": "2030-01-10T20:00:00.000Z"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.error: isString
+  res.body.errors.feeCents: isString
+}

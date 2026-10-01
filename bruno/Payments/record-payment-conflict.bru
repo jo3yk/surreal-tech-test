@@ -1,0 +1,22 @@
+meta {
+  name: Record payment - reference reused (409)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/bookings/{{paymentBookingId}}/payments
+  body: json
+  auth: none
+}
+
+body:json {
+  {"reference":"{{paymentRef}}","amountCents":999,"paidAt":"2030-01-01T09:00:00.000Z"}
+}
+
+assert {
+  res.status: eq 409
+  res.body.error: isString
+  res.body.errors.reference: isString
+}
+

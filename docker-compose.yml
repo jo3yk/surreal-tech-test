@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: surreal
+      POSTGRES_PASSWORD: surreal
+      POSTGRES_DB: surreal
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U surreal -d surreal"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  app:
+    build: .
+    environment:
+      PORT: "8080"
+      DB_TYPE: postgres
+      DEBUG_ENDPOINTS: "true"
+      DATABASE_URL: postgres://surreal:surreal@postgres:5432/surreal
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Not started by `docker compose up`; run with `docker compose run --rm k6 run /k6/<script>.js`
+  k6:
+    image: grafana/k6:latest
+    profiles: ["load"]
+    environment:
+      BASE_URL: http://app:8080/v1
+    volumes:
+      - ./k6:/k6:ro
+      - ./results:/results
+    depends_on:
+      - app
+
+volumes:
+  pgdata:

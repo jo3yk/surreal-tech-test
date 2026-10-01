@@ -1,0 +1,21 @@
+meta {
+  name: Record payment after cancellation (201)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/bookings/{{paymentBookingId}}/payments
+  body: json
+  auth: none
+}
+
+body:json {
+  {"reference":"{{paymentRef}}-late","amountCents":5000,"paidAt":"2030-02-11T09:00:00.000Z"}
+}
+
+assert {
+  res.status: eq 201
+  res.body.paymentId: isString
+}
+

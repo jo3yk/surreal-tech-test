@@ -7,16 +7,20 @@
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
     "test": "jest",
-    "typecheck": "tsc --noEmit"
+    "test:coverage": "jest --coverage",
+    "typecheck": "tsc --noEmit",
+    "bench:models": "node --expose-gc --import tsx scripts/bench-models.ts"
   },
   "dependencies": {
     "express": "^4.22.1",
     "shimmiestack": "2.1.1"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^4.17.25",
-    "@types/jest": "^29.5.13",
+    "@types/jest": "^29.5.14",
     "@types/node": "^22.0.0",
+    "@types/pg": "^8.23.1",
     "@types/supertest": "^6.0.2",
     "jest": "^29.7.0",
     "supertest": "^7.0.0",

@@ -1,0 +1,21 @@
+meta {
+  name: Cancel booking with deposit paid
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/bookings/{{paymentBookingId}}/cancel
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "reason": "band split up"
+  }
+}
+
+assert {
+  res.status: eq 200
+}

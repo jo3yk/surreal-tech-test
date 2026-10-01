@@ -1,0 +1,18 @@
+meta {
+  name: Get entertainer earnings
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/entertainers/{{entertainerId}}/earnings
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.totalPaidCents: eq 10000
+  res.body.totalOutstandingCents: eq 35000
+  res.body.bookings[0].paidCents: eq 10000
+}

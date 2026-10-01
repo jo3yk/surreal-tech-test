@@ -1,0 +1,27 @@
+meta {
+  name: Create entertainer
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/entertainers
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "The Amplifiers",
+    "genre": "rock"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.entertainerId: isString
+}
+
+script:post-response {
+  bru.setVar("entertainerId", res.body.entertainerId);
+}
